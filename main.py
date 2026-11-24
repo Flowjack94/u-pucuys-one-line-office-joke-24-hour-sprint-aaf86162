@@ -13,7 +13,11 @@ JOKE = "I asked everyone to stop hitting reply-all, by hitting reply-all."
 
 def validate_entry(text: str) -> None:
     """Enforce the competition gate: UTF-8, 1-200 chars, one line,
-    not only whitespace, no control characters."""
+    not only whitespace, no control characters. In addition to the
+    C0 controls and DEL already rejected below, this also rejects
+    the C1 controls (U+0080-U+009F), the Unicode line/paragraph
+    separators (U+2028/U+2029, which would visually break the
+    single line), and a stray byte-order mark (U+FEFF)."""
     if not isinstance(text, str):
         raise TypeError("entry must be a str")
     if not (1 <= len(text) <= 200):
@@ -24,6 +28,8 @@ def validate_entry(text: str) -> None:
         if ch in ("\n", "\r"):
             raise ValueError("entry must be a single line")
         if ord(ch) < 0x20 or ord(ch) == 0x7F:
+            raise ValueError(f"entry contains control character U+{ord(ch):04X}")
+        if 0x80 <= ord(ch) <= 0x9F or ch in ("\u2028", "\u2029", "\ufeff"):
             raise ValueError(f"entry contains control character U+{ord(ch):04X}")
     text.encode("utf-8")
 
